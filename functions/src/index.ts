@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { buildRefinePrompt } from "../../shared/prompts";
 
 admin.initializeApp();
 
@@ -62,7 +63,7 @@ export const refine = functions.https.onRequest(async (req, res) => {
             {
               parts: [
                 {
-                  text: `You are an expert writing editor. Refine the following journal entry to improve clarity, grammar, and flow while preserving the author's voice and meaning. Also generate a concise, evocative title for the entry.\n\nReturn your response as JSON with exactly two fields: "title" (a short title) and "refined" (the refined HTML content). Return ONLY valid JSON, no markdown wrapping or code fences.\n\n${content}`,
+                  text: buildRefinePrompt(content),
                 },
               ],
             },
@@ -87,9 +88,9 @@ export const refine = functions.https.onRequest(async (req, res) => {
         .replace(/\n?```\s*$/i, "")
         .trim();
       const parsed = JSON.parse(cleaned);
-      res.json({ refined: parsed.refined || content, title: parsed.title || "" });
+      res.json({ refined: parsed.refined || content, title: parsed.title || "", feedback: parsed.feedback || "" });
     } catch {
-      res.json({ refined: rawText, title: "" });
+      res.json({ refined: rawText, title: "", feedback: "" });
     }
   } catch (err) {
     console.error("Refinement error:", err);

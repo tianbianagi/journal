@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildRefinePrompt } from "../../../../shared/prompts";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ALLOWED_EMAIL = "tianbian.agi@gmail.com";
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
             {
               parts: [
                 {
-                  text: `You are an expert writing editor. Refine the following journal entry to improve clarity, grammar, and flow while preserving the author's voice and meaning. Also generate a concise, evocative title for the entry.\n\nReturn your response as JSON with exactly two fields: "title" (a short title) and "refined" (the refined HTML content). Return ONLY valid JSON, no markdown wrapping or code fences.\n\n${content}`,
+                  text: buildRefinePrompt(content),
                 },
               ],
             },
@@ -76,9 +77,9 @@ export async function POST(req: NextRequest) {
     try {
       const cleaned = rawText.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
       const parsed = JSON.parse(cleaned);
-      return NextResponse.json({ refined: parsed.refined || content, title: parsed.title || "" });
+      return NextResponse.json({ refined: parsed.refined || content, title: parsed.title || "", feedback: parsed.feedback || "" });
     } catch {
-      return NextResponse.json({ refined: rawText, title: "" });
+      return NextResponse.json({ refined: rawText, title: "", feedback: "" });
     }
   } catch (err) {
     console.error("Refinement error:", err);

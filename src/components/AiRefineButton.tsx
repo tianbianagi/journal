@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
 import ComparisonView from "./ComparisonView";
 
@@ -13,10 +13,20 @@ export default function AiRefineButton({ content, onAccept }: AiRefineButtonProp
   const [loading, setLoading] = useState(false);
   const [refined, setRefined] = useState<string | null>(null);
   const [suggestedTitle, setSuggestedTitle] = useState<string>("");
+  const [feedback, setFeedback] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const cacheRef = useRef<{ content: string; refined: string; title: string; feedback: string } | null>(null);
 
   const handleRefine = async () => {
     if (!content.trim() || loading) return;
+
+    if (cacheRef.current && cacheRef.current.content === content) {
+      setRefined(cacheRef.current.refined);
+      setSuggestedTitle(cacheRef.current.title);
+      setFeedback(cacheRef.current.feedback);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -35,6 +45,8 @@ export default function AiRefineButton({ content, onAccept }: AiRefineButtonProp
       if (!res.ok) throw new Error(data.error || `Refinement failed (${res.status})`);
       setRefined(data.refined);
       setSuggestedTitle(data.title || "");
+      setFeedback(data.feedback || "");
+      cacheRef.current = { content, refined: data.refined, title: data.title || "", feedback: data.feedback || "" };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to refine. Try again.";
       setError(msg);
@@ -49,12 +61,19 @@ export default function AiRefineButton({ content, onAccept }: AiRefineButtonProp
       onAccept(refined, suggestedTitle);
       setRefined(null);
       setSuggestedTitle("");
+      setFeedback("");
     }
   };
 
   const handleReject = () => {
     setRefined(null);
     setSuggestedTitle("");
+    setFeedback("");
+    cacheRef.current = null;
+  };
+
+  const handleDismiss = () => {
+    setRefined(null);
   };
 
   return (
@@ -83,11 +102,12 @@ export default function AiRefineButton({ content, onAccept }: AiRefineButtonProp
 
       {refined && (
         <ComparisonView
-          original={content}
           refined={refined}
+          feedback={feedback}
           suggestedTitle={suggestedTitle}
           onAccept={handleAccept}
           onReject={handleReject}
+          onDismiss={handleDismiss}
         />
       )}
     </>
