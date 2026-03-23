@@ -34,13 +34,19 @@ function EditorContent() {
 
   const flush = useCallback(async () => {
     if (pendingRef.current) {
+      // Don't save if both title and content are empty
+      const pendingTitle = pendingRef.current.title ?? title;
+      const pendingPlain = pendingRef.current.plainText ?? currentContent.replace(/<[^>]*>/g, "").trim();
+      if (!pendingTitle.trim() && !pendingPlain.trim()) {
+        return;
+      }
       const data = { ...pendingRef.current };
       pendingRef.current = null;
       setSaveStatus("saving");
       await save(data);
       setSaveStatus("saved");
     }
-  }, [save]);
+  }, [save, title, currentContent]);
 
   useEffect(() => {
     timerRef.current = setInterval(flush, 10000);
@@ -79,8 +85,18 @@ function EditorContent() {
     router.replace("/");
   };
 
+  const isEntryEmpty = () => {
+    const plainText = currentContent.replace(/<[^>]*>/g, "").trim();
+    return !title.trim() && !plainText;
+  };
+
   const handleBack = async () => {
-    await flush();
+    if (isEntryEmpty()) {
+      pendingRef.current = null;
+      if (id) await deleteEntry(id);
+    } else {
+      await flush();
+    }
     router.push("/");
   };
 

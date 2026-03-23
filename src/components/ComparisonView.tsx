@@ -25,25 +25,40 @@ export default function ComparisonView({
   const [dragY, setDragY] = useState(0);
   const touchStartY = useRef(0);
   const isDragging = useRef(false);
+  const handleRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const dragYRef = useRef(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!handleRef.current?.contains(e.target as Node)) return;
     touchStartY.current = e.touches[0].clientY;
     isDragging.current = true;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging.current) return;
-    const delta = e.touches[0].clientY - touchStartY.current;
-    setDragY(Math.max(0, delta));
-  };
-
   const handleTouchEnd = () => {
+    if (!isDragging.current) return;
     isDragging.current = false;
-    if (dragY > 100) {
+    if (dragYRef.current > 100) {
       onDismiss();
     }
+    dragYRef.current = 0;
     setDragY(0);
   };
+
+  // Attach touchmove as non-passive so preventDefault works on iOS
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) return;
+      e.preventDefault();
+      const delta = Math.max(0, e.touches[0].clientY - touchStartY.current);
+      dragYRef.current = delta;
+      setDragY(delta);
+    };
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onTouchMove);
+  }, [mounted]);
 
   const handleCopy = async (html: string, section: string) => {
     const tmp = document.createElement("div");
@@ -57,16 +72,24 @@ export default function ComparisonView({
     setMounted(true);
   }, []);
 
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   const modal = (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-end sm:items-center justify-center" onClick={(e) => { if (e.target === e.currentTarget && window.innerWidth >= 640) onDismiss(); }}>
       <div
+        ref={modalRef}
         className="bg-white w-full max-w-5xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
         style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined, transition: isDragging.current ? "none" : "transform 0.2s ease-out" }}
         onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="sm:hidden flex justify-center pt-2 pb-1">
+        <div ref={handleRef} className="sm:hidden flex justify-center pt-2 pb-3 cursor-grab">
           <div className="w-10 h-1 rounded-full bg-neutral-300" />
         </div>
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
