@@ -1,0 +1,16 @@
+{
+  "name": "journal-mcp-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "firebase-admin": "^13.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

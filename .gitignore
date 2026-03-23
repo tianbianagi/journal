@@ -35,3 +35,8 @@ functions/.env.*
 functions/.next/
 functions/lib/
 .firebase/
+
+# mcp server
+mcp/node_modules
+mcp/dist
+.mcp.json
