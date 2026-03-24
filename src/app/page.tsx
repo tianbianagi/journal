@@ -1,17 +1,22 @@
 "use client";
 
-import { useEntries } from "@/lib/hooks";
+import { useEntries, useAuth } from "@/lib/hooks";
 import EntryCard from "@/components/EntryCard";
 import NewEntryFab from "@/components/NewEntryFab";
 
 export default function FeedPage() {
+  const { user } = useAuth();
   const { entries, loading } = useEntries();
+  const firstName = user?.displayName?.split(" ")[0];
 
   return (
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-neutral-100 z-40">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <img src="/icon.svg" alt="Journal" className="h-8 w-8" />
+          {firstName && (
+            <span className="text-sm font-medium text-neutral-600">{firstName}</span>
+          )}
         </div>
       </header>
 
